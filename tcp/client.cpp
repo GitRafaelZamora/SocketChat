@@ -14,20 +14,48 @@
 #include <sys/stat.h>
 #include <thread>         // std::this_thread::sleep_for
 #include <chrono>         // std::chrono::seconds
+#include <regex>
 
 using namespace std;
 
-string parseMessage(char buffer[1024]) {
-  // Need to store source, dest, and msg.
+struct tcp_header {
+  string src;
+  string dest;
+  string msg;
+  string file_path;
+  int file_size;
+};
+/*
+012345678901234567890
+you->server$file.txt
+you->sever$file.txt
+yo->server$file.txt
+you->serverfile.txt
+*/
+tcp_header parseMessage(char buffer[1024]) {
+  // Create a tcp_header struct to store src, dest, msg
+  tcp_header header;
+  // Convert buffer into a string.
   string s(buffer);
-  string src = s.substr(0, s.find("->"));
-  int length = (s.find("$")) - (s.find("->") + 2);
-  string dest = s.substr(s.find("->") + 2, length);
-  string path = s.substr(s.find("$") + 1, s.find('\0'));
-  printf("-----File Details-----\n");
-  printf("src: %s dest: %s path: %s\n", src.c_str(), dest.c_str(), path.c_str());
-  printf("----------------------\n");
-  return path;
+  // Grab the src from the string
+  header.src       =  s.substr(0, s.find("->"));
+  header.dest      =  s.substr(s.find("->") + 2, (s.find("$") - (s.find("->") + 2)));
+  header.file_path =  s.substr((s.find("$") + 1), (s.length() - 1) - (s.find("$") + 1) );
+  //&& s.find("$") > s.find("->")
+  if (header.src == "you" && header.dest == "server") {
+    cout << "Valid Message Format." << endl;
+    printf("---------Message Details---------\n");
+    printf("src: %s dest: %s path: %s \n", header.src.c_str(), header.dest.c_str(), header.file_path.c_str());
+    printf("---------------------------------\n");
+  } else {
+    cout << "Invalid Message Format." << endl;
+    header.src = "";
+    header.dest = "";
+    header.file_path = "";
+  }
+
+
+  return header;
 }
 
 long getFileSize(string filename) {
@@ -36,36 +64,41 @@ long getFileSize(string filename) {
     return rc == 0 ? stat_buf.st_size : -1;
 }
 
-string openFile(string path) {
-    string message;
-    ifstream myfile(path, fstream::in);
-    long size = getFileSize(path);
-    printf("The size of the file is: %lu bits\n", size);
+tcp_header openFile(tcp_header client_header) {
+    // TODO: You need to parse the string you read from the keyboard.
+	  // If it follows the format "you->server$file_name", extract the
+	  // file name and open the file, read each chunk and send the
+	  // chunk. You may need to write an inner loop to read and send
+	  // each chunk.
+
+    // Open file.
+    fstream myfile;
+    myfile.open(client_header.file_path, fstream::in);
+    // store the file size in client_header
+    client_header.file_size = getFileSize(client_header.file_path);
+    printf("%s size: %d bytes\n", client_header.file_path.c_str(), client_header.file_size);
 
     if (myfile.is_open()) {
       string line;
-      printf("Opening : %s\n", path.c_str());
+      printf("Opening : %s\n", client_header.file_path.c_str());
       while ( getline(myfile, line) ) {
         // build msg from file
-        message += line;
+        printf("%s\n", line.c_str() );
+        client_header.msg += line;
       }
-      printf("%s\n", message.c_str());
+      printf("%s\n", client_header.msg.c_str());
       myfile.close();
     } else {
-      cout << "Unable to open file";
+      cout << "Unable to open file\n";
     }
-    return message;
+    return client_header;
 }
-
-
 
 int main(int argc, char *argv[]) {
     int ret, res;
     int sockfd = 0;
     char send_buffer[1024];
     struct sockaddr_in serv_addr;
-    char char_buffer[1];
-    char recv_buffer[1];
 
     // Create socket socket stream.
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -93,21 +126,26 @@ int main(int argc, char *argv[]) {
       return -1;
     }
 
-
     while (1) {
+        // Get src->dest#msg from console input.
         fgets(send_buffer, sizeof(send_buffer), stdin);
-        // Test: you->server$file.txt
-        string path = parseMessage(send_buffer).c_str();
-        string message = openFile(path);
 
-        for (int i = 0; i < message.length(); i++) {
+        // Parse the console string into a tcp_header struct.
+        tcp_header client_header = parseMessage(send_buffer);
+        // Open a file client's specified filepath.
+        // Store the tcp message in the client_header.
+        client_header = openFile(client_header);
 
-          char_buffer[0] = message[i];
 
-          // Sending to server.
+        char char_buffer[1];
+        char recv_buffer[1];
+        // Send client_header.msg to server byte by byte
+        for (int i = 0; i < client_header.msg.length(); i++) {
+          char_buffer[0] = client_header.msg[i];
+
+          // Sending one byte to the server.
           ret = send(sockfd, char_buffer, strlen(char_buffer), 0);
           printf("Client Sending : %c, ", char_buffer[0]);
-
            if(ret < 0) {
              printf("send() error: %s.\n", strerror(errno));
              break;
@@ -116,7 +154,6 @@ int main(int argc, char *argv[]) {
            // Listen for ACK from server.
            res = recv(sockfd, recv_buffer, sizeof(recv_buffer), 0);
            printf("Server ACK : %c\n", recv_buffer[0]);
-
            if (res <= 0) {
               printf("recv() error: %s.\n", strerror(errno));
               return -1;

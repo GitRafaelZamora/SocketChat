@@ -9,8 +9,39 @@
 #include <pthread.h>
 #include <thread>         // std::this_thread::sleep_for
 #include <chrono>         // std::chrono::seconds
+#include <regex>
 
 using namespace std;
+
+// void *worker_thread(void *arg) {
+//   int ret;
+//   int connfd = (int) arg;
+//   char recv_buffer[1024];
+//
+//   printf("[%d] worker thread started.\n", connfd);
+//
+//   while (1) {
+//       ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
+//
+//       if (ret < 0) {
+//         // Input / output error.
+//         printf("[%d] recv() error: %s.\n", connfd, strerror(errno));
+//         return NULL;
+//       } else if (ret == 0) {
+//         // The connection is terminated by the other end.
+//         printf("[%d] connection lost\n", connfd);
+//         break;
+//       }
+//
+//       // TODO: Process your message, receive chunks of byte stream, and
+//       // write the chunks to a file. Here I just print it on the screen.
+//
+//       printf("[%d]%s", connfd, recv_buffer);
+//   }
+//
+//   printf("[%d] worker thread terminated.\n", connfd);
+//   }
+// }
 
 
 int main(int argc, char *argv[]) {
@@ -32,7 +63,7 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(31000);
 
-    ret = bind(listenfd, (struct sockaddr*)
+    ret = ::bind(listenfd, (struct sockaddr*)
                &serv_addr, sizeof(serv_addr));
     if (ret < 0) {
 	     printf("bind() error: %s.\n", strerror(errno));
@@ -59,7 +90,11 @@ int main(int argc, char *argv[]) {
 
 	      printf("connection accept from %s.\n", inet_ntoa(client_addr.sin_addr));
 
+
+        // pthread_t tid;
+
         while (1) {
+          // Recieving byte stream from the client.
           ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
           printf("Server Recieved : %c, ", recv_buffer[0]);
 
