@@ -13,35 +13,39 @@
 
 using namespace std;
 
-// void *worker_thread(void *arg) {
-//   int ret;
-//   int connfd = (int) arg;
-//   char recv_buffer[1024];
-//
-//   printf("[%d] worker thread started.\n", connfd);
-//
-//   while (1) {
-//       ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
-//
-//       if (ret < 0) {
-//         // Input / output error.
-//         printf("[%d] recv() error: %s.\n", connfd, strerror(errno));
-//         return NULL;
-//       } else if (ret == 0) {
-//         // The connection is terminated by the other end.
-//         printf("[%d] connection lost\n", connfd);
-//         break;
-//       }
-//
-//       // TODO: Process your message, receive chunks of byte stream, and
-//       // write the chunks to a file. Here I just print it on the screen.
-//
-//       printf("[%d]%s", connfd, recv_buffer);
-//   }
-//
-//   printf("[%d] worker thread terminated.\n", connfd);
-//   }
-// }
+void *worker_thread(void *arg) {
+  int ret, res;
+  int connfd = (long) arg;
+  char recv_buffer[1024];
+
+  printf("[%d] worker thread started.\n", connfd);
+  while (1) {
+    // Recieving byte stream from the client.
+    ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
+    printf("Server Recieved : %c, ", recv_buffer[0]);
+
+    if (ret <= 0) {
+       printf("recv() error: %s.\n", strerror(errno));
+       return NULL;
+    } else if (ret == 0) {
+      // The connection is terminated by the other end.
+      printf("[%d] connection lost\n", connfd);
+      break;
+    }
+    // TODO: Process your message, receive chunks of byte stream, and
+    // write the chunks to a file. Here I just print it on the screen.
+
+    // Send ACK to client
+    res = send(connfd, recv_buffer, strlen(recv_buffer), 0);
+    printf("ret: %d ", ret);
+    printf(", Server Sending : %c\n", recv_buffer[0]);
+    if(res < 0) {
+      printf("send() error: %s.\n", strerror(errno));
+      break;
+    }
+    printf("[%d] worker thread terminated.\n", connfd);
+  }
+}
 
 
 int main(int argc, char *argv[]) {
@@ -87,32 +91,10 @@ int main(int argc, char *argv[]) {
 		      printf("accept() error: %s.\n", strerror(errno));
         	return -1;
         }
-
 	      printf("connection accept from %s.\n", inet_ntoa(client_addr.sin_addr));
 
-
-        // pthread_t tid;
-
-        while (1) {
-          // Recieving byte stream from the client.
-          ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
-          printf("Server Recieved : %c, ", recv_buffer[0]);
-
-          if (ret <= 0) {
-             printf("recv() error: %s.\n", strerror(errno));
-             return -1;
-          }
-
-          // Send ACK to client
-          res = send(connfd, recv_buffer, strlen(recv_buffer), 0);
-          printf("ret: %d ", ret);
-          printf(", Server Sending : %c\n", recv_buffer[0]);
-          if(res < 0) {
-            printf("send() error: %s.\n", strerror(errno));
-            break;
-          }
-
-        }
+        pthread_t tid;
+        pthread_create(&tid, NULL, worker_thread, (void *)connfd);
     }
     return 0;
 }
