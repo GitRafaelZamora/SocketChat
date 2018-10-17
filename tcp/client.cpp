@@ -10,6 +10,7 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -26,20 +27,34 @@ string parseMessage(char buffer[1024]) {
   return path;
 }
 
-void openFile(string path) {
+long getFileSize(string filename) {
+    struct stat stat_buf;
+    int rc = stat(filename.c_str(), &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
+}
+
+string openFile(string path) {
+    string message;
     ifstream myfile(path, fstream::in);
+    long size = getFileSize(path);
+    printf("The size of the file is: %lu bits\n", size);
 
     if (myfile.is_open()) {
       string line;
       printf("Opening : %s\n", path.c_str());
-      while ( getline(myfile,line) ) {
-        printf("%s\n", line.c_str());
+      while ( getline(myfile, line) ) {
+        // build msg from file
+        message += line;
       }
+      printf("%s\n", message.c_str());
       myfile.close();
     } else {
       cout << "Unable to open file";
     }
+    return message;
 }
+
+
 
 int main(int argc, char *argv[]) {
     int ret;
@@ -79,16 +94,26 @@ int main(int argc, char *argv[]) {
               stdin);
         // Test: you->server$file.txt
         string path = parseMessage(send_buffer).c_str();
-        openFile(path);
+        string message = openFile(path);
 
-        ret = send(sockfd,
-                   send_buffer,
-                   strlen(send_buffer) + 1,
-                   0);
-        if(ret < 0) {
-	    printf("send() error: %s.\n", strerror(errno));
+        // while msg is not null keep sending
+        // iterate thru string
+        char char_buffer[1];
+        for (int i = 0; message[i] != '\0'; i++) {
+          // printf("c : %c\n", message[i]);
+          char_buffer[0] = message[i];
+          ret = send(sockfd,
+                     char_buffer,
+                     strlen(char_buffer) + 1,
+                     0);
+
+          if(ret < 0) {
+             printf("send() error: %s.\n", strerror(errno));
             break;
+          }
         }
+
+
     }
 
     return 0;
