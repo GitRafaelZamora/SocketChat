@@ -8,9 +8,12 @@
 #include <arpa/inet.h>
 #include <fstream>
 #include <cstring>
+#include <pthread.h>
 #include <string>
 #include <iostream>
 #include <sys/stat.h>
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::seconds
 
 using namespace std;
 
@@ -57,10 +60,12 @@ string openFile(string path) {
 
 
 int main(int argc, char *argv[]) {
-    int ret;
+    int ret, res;
     int sockfd = 0;
     char send_buffer[1024];
     struct sockaddr_in serv_addr;
+    char char_buffer[1];
+    char recv_buffer[1];
 
     // Create socket socket stream.
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -84,37 +89,39 @@ int main(int argc, char *argv[]) {
                   (struct sockaddr *) &serv_addr,
                   sizeof(serv_addr));
     if (ret < 0) {
-	printf("connect() error: %s.\n", strerror(errno));
-        return -1;
+      printf("connect() error: %s.\n", strerror(errno));
+      return -1;
     }
 
+
     while (1) {
-        fgets(send_buffer,
-              sizeof(send_buffer),
-              stdin);
+        fgets(send_buffer, sizeof(send_buffer), stdin);
         // Test: you->server$file.txt
         string path = parseMessage(send_buffer).c_str();
         string message = openFile(path);
 
-        // while msg is not null keep sending
-        // iterate thru string
-        char char_buffer[1];
-        for (int i = 0; message[i] != '\0'; i++) {
-          // printf("c : %c\n", message[i]);
+        for (int i = 0; i < message.length(); i++) {
+
           char_buffer[0] = message[i];
-          ret = send(sockfd,
-                     char_buffer,
-                     strlen(char_buffer) + 1,
-                     0);
 
-          if(ret < 0) {
+          // Sending to server.
+          ret = send(sockfd, char_buffer, strlen(char_buffer), 0);
+          printf("Client Sending : %c, ", char_buffer[0]);
+
+           if(ret < 0) {
              printf("send() error: %s.\n", strerror(errno));
-            break;
-          }
+             break;
+           }
+
+           // Listen for ACK from server.
+           res = recv(sockfd, recv_buffer, sizeof(recv_buffer), 0);
+           printf("Server ACK : %c\n", recv_buffer[0]);
+
+           if (res <= 0) {
+              printf("recv() error: %s.\n", strerror(errno));
+              return -1;
+           }
         }
-
-
     }
-
     return 0;
 }

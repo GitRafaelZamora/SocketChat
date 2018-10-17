@@ -7,10 +7,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::seconds
+
+using namespace std;
 
 
 int main(int argc, char *argv[]) {
-    int ret;
+    int ret, res;
     socklen_t len;
     int listenfd = 0, connfd = 0;
     struct sockaddr_in serv_addr;
@@ -48,32 +52,31 @@ int main(int argc, char *argv[]) {
                  (struct sockaddr*) &client_addr,
                  &len);
 
-        // Start New Thread:
-    //     pthread_t client1;
-    //     int ret1;
-    //     ret1 = pthread_create(&client1, NULL, start_client_thread,(void*) "client 1");
-    //     printf("ret1 %d", ret1);
-    //
-    //     pthread_join(client1, NULL);
-    //     pthread_join(client2, NULL);
-
         if(connfd < 0) {
 		      printf("accept() error: %s.\n", strerror(errno));
         	return -1;
         }
+
 	      printf("connection accept from %s.\n", inet_ntoa(client_addr.sin_addr));
 
         while (1) {
-             ret = recv(connfd,
-                        recv_buffer,
-                        sizeof(recv_buffer),
-                        0);
+          ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
+          printf("Server Recieved : %c, ", recv_buffer[0]);
 
-             if (ret <= 0) {
-		             printf("recv() error: %s.\n", strerror(errno));
-        	        return -1;
-             }
-             printf("%s", recv_buffer);
+          if (ret <= 0) {
+             printf("recv() error: %s.\n", strerror(errno));
+             return -1;
+          }
+
+          // Send ACK to client
+          res = send(connfd, recv_buffer, strlen(recv_buffer), 0);
+          printf("ret: %d ", ret);
+          printf(", Server Sending : %c\n", recv_buffer[0]);
+          if(res < 0) {
+            printf("send() error: %s.\n", strerror(errno));
+            break;
+          }
+
         }
     }
     return 0;
