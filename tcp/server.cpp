@@ -17,12 +17,32 @@ void *worker_thread(void *arg) {
   int ret, res;
   int connfd = (long) arg;
   char recv_buffer[1024];
-
+  // FILE * pFile;
+  //   pFile = fopen ("myfile.txt","w");
+  //   if (pFile!=NULL)
+  //   {
+  //     fputs ("fopen example",pFile);
+  //     fclose (pFile);
+  //   }
   printf("[%d] worker thread started.\n", connfd);
   while (1) {
-    // Recieving byte stream from the client.
-    ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
-    printf("Server Recieved : %c, ", recv_buffer[0]);
+
+    // open a file.
+    FILE * pFile;
+    pFile = fopen("output.txt","a+");
+    if (pFile != NULL) {
+      printf("File opened.\n");
+      // Recieving byte stream from the client.
+      ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
+      // printf("Server Recieved : %c, ", recv_buffer[0]);
+      char *temp = &(recv_buffer[0]);
+      fputs(temp, pFile);
+      fclose(pFile);
+      printf("File closed.\n");
+    } else {
+      printf("File not opened.\n");
+    }
+
 
     if (ret <= 0) {
        printf("recv() error: %s.\n", strerror(errno));
@@ -32,13 +52,14 @@ void *worker_thread(void *arg) {
       printf("[%d] connection lost\n", connfd);
       break;
     }
+
     // TODO: Process your message, receive chunks of byte stream, and
     // write the chunks to a file. Here I just print it on the screen.
 
     // Send ACK to client
     res = send(connfd, recv_buffer, strlen(recv_buffer), 0);
     printf("ret: %d ", ret);
-    printf(", Server Sending : %c\n", recv_buffer[0]);
+    // printf(", Server Sending : %c\n", recv_buffer[0]);
     if(res < 0) {
       printf("send() error: %s.\n", strerror(errno));
       break;

@@ -41,20 +41,15 @@ tcp_header parseMessage(char buffer[1024]) {
   header.src       =  s.substr(0, s.find("->"));
   header.dest      =  s.substr(s.find("->") + 2, (s.find("$") - (s.find("->") + 2)));
   header.file_path =  s.substr((s.find("$") + 1), (s.length() - 1) - (s.find("$") + 1) );
-  //&& s.find("$") > s.find("->")
+
   if (header.src == "you" && header.dest == "server") {
-    cout << "Valid Message Format." << endl;
-    printf("---------Message Details---------\n");
-    printf("src: %s dest: %s path: %s \n", header.src.c_str(), header.dest.c_str(), header.file_path.c_str());
-    printf("---------------------------------\n");
+
   } else {
     cout << "Invalid Message Format." << endl;
     header.src = "";
     header.dest = "";
     header.file_path = "";
   }
-
-
   return header;
 }
 
@@ -83,7 +78,7 @@ tcp_header openFile(tcp_header client_header) {
       printf("Opening : %s\n", client_header.file_path.c_str());
       while ( getline(myfile, line) ) {
         // build msg from file
-        printf("%s\n", line.c_str() );
+        // printf("%s\n", line.c_str() );
         client_header.msg += line;
       }
       printf("%s\n", client_header.msg.c_str());
@@ -135,7 +130,6 @@ int main(int argc, char *argv[]) {
         // Open a file client's specified filepath.
         // Store the tcp message in the client_header.
         client_header = openFile(client_header);
-
 
         char char_buffer[1];
         char recv_buffer[1];
