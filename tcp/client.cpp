@@ -138,8 +138,13 @@ int main(int argc, char *argv[]) {
           char_buffer[0] = client_header.msg[i];
 
           // Sending one byte to the server.
-          ret = send(sockfd, char_buffer, strlen(char_buffer), 0);
-          printf("Client Sending : %c, ", char_buffer[0]);
+          if (strncmp(&char_buffer[0], "#", 1) == 0) {
+            ret = send(sockfd, "", strlen(char_buffer), 0);
+          } else {
+            ret = send(sockfd, char_buffer, strlen(char_buffer), 0);
+          }
+
+          // printf("Client Sending : %c, ", char_buffer[0]);
            if(ret < 0) {
              printf("send() error: %s.\n", strerror(errno));
              break;

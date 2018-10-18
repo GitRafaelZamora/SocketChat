@@ -31,14 +31,14 @@ void *worker_thread(void *arg) {
     FILE * pFile;
     pFile = fopen("output.txt","a+");
     if (pFile != NULL) {
-      printf("File opened.\n");
+      // printf("File opened.\n");
       // Recieving byte stream from the client.
       ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
       // printf("Server Recieved : %c, ", recv_buffer[0]);
       char *temp = &(recv_buffer[0]);
       fputs(temp, pFile);
       fclose(pFile);
-      printf("File closed.\n");
+      printf("Ret : %d\n", ret);
     } else {
       printf("File not opened.\n");
     }
@@ -49,7 +49,7 @@ void *worker_thread(void *arg) {
        return NULL;
     } else if (ret == 0) {
       // The connection is terminated by the other end.
-      printf("[%d] connection lost\n", connfd);
+      printf("[%d] connection lost.\n", connfd);
       break;
     }
 
@@ -58,14 +58,14 @@ void *worker_thread(void *arg) {
 
     // Send ACK to client
     res = send(connfd, recv_buffer, strlen(recv_buffer), 0);
-    printf("ret: %d ", ret);
+    // printf("ret: %d ", ret);
     // printf(", Server Sending : %c\n", recv_buffer[0]);
     if(res < 0) {
       printf("send() error: %s.\n", strerror(errno));
       break;
     }
-    printf("[%d] worker thread terminated.\n", connfd);
   }
+  printf("[%d] worker thread terminated.\n", connfd);
 }
 
 
