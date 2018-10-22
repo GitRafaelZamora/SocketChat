@@ -12,9 +12,16 @@
 #include <string>
 #include <iostream>
 #include <sys/stat.h>
-#include <thread>         // std::this_thread::sleep_for
-#include <chrono>         // std::chrono::seconds
+#include <thread>
 #include <regex>
+
+/* TESTING MESSAGES
+012345678901234567890
+you->server$file.txt
+you->sever$file.txt
+yo->server$file.txt
+you->serverfile.txt
+*/
 
 using namespace std;
 
@@ -25,13 +32,7 @@ struct tcp_header {
   string file_path;
   int file_size;
 };
-/*
-012345678901234567890
-you->server$file.txt
-you->sever$file.txt
-yo->server$file.txt
-you->serverfile.txt
-*/
+
 tcp_header parseMessage(char buffer[1024]) {
   // Create a tcp_header struct to store src, dest, msg
   tcp_header header;
@@ -152,7 +153,7 @@ int main(int argc, char *argv[]) {
 
            // Listen for ACK from server.
            res = recv(sockfd, recv_buffer, sizeof(recv_buffer), 0);
-           printf("Server ACK : %c\n", recv_buffer[0]);
+           // printf("Server ACK : %c\n", recv_buffer[0]);
            if (res <= 0) {
               printf("recv() error: %s.\n", strerror(errno));
               return -1;

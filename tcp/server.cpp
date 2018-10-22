@@ -17,13 +17,7 @@ void *worker_thread(void *arg) {
   int ret, res;
   int connfd = (long) arg;
   char recv_buffer[1024];
-  // FILE * pFile;
-  //   pFile = fopen ("myfile.txt","w");
-  //   if (pFile!=NULL)
-  //   {
-  //     fputs ("fopen example",pFile);
-  //     fclose (pFile);
-  //   }
+
   printf("[%d] worker thread started.\n", connfd);
   while (1) {
 
@@ -38,7 +32,7 @@ void *worker_thread(void *arg) {
       char *temp = &(recv_buffer[0]);
       fputs(temp, pFile);
       fclose(pFile);
-      printf("Ret : %d\n", ret);
+      // printf("Ret : %d\n", ret);
     } else {
       printf("File not opened.\n");
     }
@@ -90,6 +84,7 @@ int main(int argc, char *argv[]) {
 
     ret = ::bind(listenfd, (struct sockaddr*)
                &serv_addr, sizeof(serv_addr));
+    
     if (ret < 0) {
 	     printf("bind() error: %s.\n", strerror(errno));
         return -1;
