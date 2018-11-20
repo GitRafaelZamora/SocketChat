@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
           char_buffer[0] = client_header.msg[i];
 
           // Sending one byte to the server.
-          if (strncmp(&char_buffer[0], "#", 1) == 0) {
+          if (strncmp(&char_buffer[0], "#", 1) == 0) {  // Checking for the End Of File Character
             ret = send(sockfd, "", strlen(char_buffer), 0);
           } else {
             ret = send(sockfd, char_buffer, strlen(char_buffer), 0);
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
 
            // Listen for ACK from server.
            res = recv(sockfd, recv_buffer, sizeof(recv_buffer), 0);
-           // printf("Server ACK : %c\n", recv_buffer[0]);
+           printf("%c", recv_buffer[0]);
            if (res <= 0) {
               printf("recv() error: %s.\n", strerror(errno));
               return -1;

@@ -29,6 +29,7 @@ void *worker_thread(void *arg) {
       // Recieving byte stream from the client.
       ret = recv(connfd, recv_buffer, sizeof(recv_buffer), 0);
       // printf("Server Recieved : %c, ", recv_buffer[0]);
+      printf("Recieved: %d bytes", ret);
       char *temp = &(recv_buffer[0]);
       fputs(temp, pFile);
       fclose(pFile);
@@ -47,12 +48,12 @@ void *worker_thread(void *arg) {
       break;
     }
 
-    // TODO: Process your message, receive chunks of byte stream, and
-    // write the chunks to a file. Here I just print it on the screen.
-
-    // Send ACK to client
-    res = send(connfd, recv_buffer, strlen(recv_buffer), 0);
-    // printf("ret: %d ", ret);
+    // Send ACK to client if the Recieved character is a #
+    // if (strncmp(&recv_buffer[0], "#", 1) == 0 ){
+    // memset(&recv_buffer,0, sizeof(recv_buffer));
+    // strcpy(recv_buffer,"server->you$file_recieved");
+      res = send(connfd, recv_buffer, strlen(recv_buffer), 0);
+    // }
     // printf(", Server Sending : %c\n", recv_buffer[0]);
     if(res < 0) {
       printf("send() error: %s.\n", strerror(errno));
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
 
     ret = ::bind(listenfd, (struct sockaddr*)
                &serv_addr, sizeof(serv_addr));
-    
+
     if (ret < 0) {
 	     printf("bind() error: %s.\n", strerror(errno));
         return -1;
