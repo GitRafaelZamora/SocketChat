@@ -1,3 +1,3 @@
-make: client.cpp server.cpp
-	g++ client.cpp -o client
-	g++ server.cpp -o server
+make:
+	g++ Server/Request.cpp Client.cpp Chat/chat.cpp -std=c++17 -Wall -Wextra -pedantic-errors -o Chat/chat
+	g++ Server/Request.cpp Server/server.cpp -o Server/server
