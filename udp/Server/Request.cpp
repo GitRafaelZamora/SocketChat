@@ -12,10 +12,11 @@
 #include <iostream>
 #include <string>
 
-enum RequestType { LOGIN, SUCCESS, SEND, FAILED };
+
+enum RequestType { LOGIN, SEND };
 
 struct Request {
-  RequestType msg_type;
+  RequestType type;
   std::string host;
   std::string msg_body;
 
@@ -23,7 +24,7 @@ struct Request {
   }
 
   Request(RequestType type, std::string host, std::string body) {
-    this->msg_type = type;
+    this->type = type;
     this->host = host;
     this->msg_body = body;
   }
@@ -55,5 +56,11 @@ struct Request {
       delete [] cstr;
     }
     return buffer;
+  }
+
+  void print() {
+    std::cout << "host : " << this->host << std::endl;
+    std::cout << "body : " << this->msg_body << std::endl;
+    std::cout << "type : " << this->type << std::endl;
   }
 };

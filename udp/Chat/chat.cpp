@@ -11,21 +11,50 @@
 
 #include <string>
 
-#include "../Server/Request.cpp"
+// #include "../Server/Request.cpp"
 #include "../Client.cpp"
 
-int main() {
+template <typename T> T get_input(const std::string &strQuery) {
+    std::cout << strQuery << "\n> ";
+    T out = T();
+    while (!(std::cin >> out)) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits <std::streamsize>::max(), '\n');
+        std::cout << "Error!" "\n";
+        std::cout << strQuery << "\n> ";
+    }
+    return out;
+}
 
-    /////////////////////////////////////////////////////////
-    ////////////////// Login ////////////////////////////////
-    /////////////////////////////////////////////////////////
+int chat_menu() {
+  int choice = get_input <int>(
+       "Hello, Would you like to log in or register?" "\n"
+       "[1] Login" "\n"
+       "[2] Register" "\n"
+       "[3] Exit");
+      return choice;
+}
+
+int main() {
+    // Creating a new client.
     Client client;
     int success = client.connect();
     if (success < 0) {
       return -1;
     }
-    client.load_users();
-    client.login_menu();
+
+    int choice = chat_menu();
+    Request request;
+     switch (choice) {
+       case 1:
+        request.type = LOGIN;
+        client.make_request(request);
+        break;
+      case 2:
+        request.type = SEND;
+        client.make_request(request);
+        break;
+    }
 
     while (1) {
         // Grabbing input from stdin storing it in send_buffer.
@@ -33,12 +62,10 @@ int main() {
         // strncat(udp_signature, send_buffer, 15);
 
         // sending send_buffer to the server.
-        client.ret = sendto(client.sockfd,
-                     client.send_buffer,
-                     sizeof(client.send_buffer),
-                     0,
-                     (struct sockaddr*) &client.servaddr,
-                     sizeof(client.servaddr));
+        if (client.online) {
+          client.send_message("client_a->client_b#SEND<hello client_b>");
+        }
+
 
         // grabbing the size of our confirmation_buffer.
         socklen_t len;

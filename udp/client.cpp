@@ -8,20 +8,23 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-struct Client {
-  std::string username;
-  std::string password;
-  std::string token;
-  int online = 0;
-  long ip;
-  long port;
+#include "Server/Request.cpp"
 
-  int ret, serv;
+class Client {
+  public : std::string username;
+  public : std::string password;
+  public : std::string token;
+  public : int online = 0;
+  public : long ip;
+  public : long port;
 
-  int sockfd;
-  struct sockaddr_in servaddr;
-  char send_buffer[1024];
-  char confirmation_buffer[1024];
+  public : int ret, serv;
+
+  public : int sockfd;
+  public : struct sockaddr_in servaddr;
+  public : char send_buffer[1024];
+  public : std::string message;
+  public : char confirmation_buffer[1024];
 
   Client() {
   }
@@ -29,35 +32,63 @@ struct Client {
   int connect() {
     // Establishing connection.
     this->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) {
+    if (this->sockfd < 0) {
 	     printf("socket() error: %s.\n", strerror(errno));
        return -1;
     }
 
     // Setting up the server address.
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    servaddr.sin_port = htons(31000);
+    memset(&this->servaddr, 0, sizeof(this->servaddr));
+    this->servaddr.sin_family = AF_INET;
+    this->servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    this->servaddr.sin_port = htons(31000);
 
-    printf("new client connection: %d\n", servaddr.sin_port);
+    printf("new client connection: %d\n", this->servaddr.sin_port);
+    this->ip = this->sockfd;
+    this->port = this->servaddr.sin_port;
+    return 1;
   }
 
-  void login(std::string username, std::string password) {
-    std::cout << "Logging in " << username << " with " << password << "\n";
+  int make_request(Request req) {
+    int ret = sendto(this->sockfd,
+                 &req,
+                 sizeof(req),
+                 0,
+                 (struct sockaddr*) &this->servaddr,
+                 sizeof(this->servaddr));
+    return ret;
+  }
+
+  int make_request(Request req, std::string username, std::string password) {
+    int ret = sendto(this->sockfd,
+                 &req,
+                 sizeof(req),
+                 0,
+                 (struct sockaddr*) &this->servaddr,
+                 sizeof(this->servaddr));
+    return ret;
+  }
+
+  int send_message(std::string) {
+    ret = sendto(sockfd,
+                 send_buffer,
+                 sizeof(send_buffer),
+                 0,
+                 (struct sockaddr*) &servaddr,
+                 sizeof(servaddr));
+    return ret;
   }
 
   template <typename T> T get_input(const std::string &strQuery) {
       std::cout << strQuery << "\n> ";
       T out = T();
-
       while (!(std::cin >> out)) {
           std::cin.clear();
           std::cin.ignore(std::numeric_limits <std::streamsize>::max(), '\n');
           std::cout << "Error!" "\n";
           std::cout << strQuery << "\n> ";
       }
-
+      std::cout << out << " got this\n";
       return out;
   }
 
@@ -93,29 +124,25 @@ struct Client {
   }
 
   void login() {
-    std::string username = get_username();
-    std::string password = get_password();
-
+    Request request;
+    request.type = LOGIN;
+    username = get_username();
+    password = get_password();
+    this->username = username;
+    this->password = password;
+    request.msg_body += username;
+    request.msg_body += ",";
+    request.msg_body += password;
+    request.print();
+    make_request(request);
+    online = 1;
   }
 
-  void login_menu() {
-    int choice = get_input <int>(
-         "Hello, Would you like to log in or register?" "\n"
-         "[1] Login" "\n"
-         "[2] Register" "\n"
-         "[3] Exit");
-
-         switch (choice) {
-           case 1:
-            login();
-            break;
-          case 2:
-            // register_user();
-            break;
-        }
-  }
-
-  void load_users() {
-
+  void print() {
+    std::cout << "Username : " << this->username << std::endl;
+    std::cout << "Password : " << this->password << std::endl;
+    std::cout << "IP : " << this->ip << std::endl;
+    std::cout << "PORT : " << this->port << std::endl;
+    std::cout << "Token : " << this->token << std::endl;
   }
 };
