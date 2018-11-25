@@ -1,17 +1,3 @@
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#include <string>
-
-// #include "../Server/Request.cpp"
 #include "../Client.cpp"
 
 template <typename T> T get_input(const std::string &strQuery) {
@@ -45,15 +31,20 @@ int main() {
 
     int choice = chat_menu();
     Request request;
-     switch (choice) {
+    switch (choice) {
        case 1:
         request.type = LOGIN;
+        request = client.create_login_request();
         client.make_request(request);
         break;
       case 2:
         request.type = SEND;
         client.make_request(request);
         break;
+      default:
+        request.type = SEND;
+        request = client.create_send_request();
+        client.make_request(request);
     }
 
     while (1) {
@@ -63,7 +54,7 @@ int main() {
 
         // sending send_buffer to the server.
         if (client.online) {
-          client.send_message("client_a->client_b#SEND<hello client_b>");
+          // client.send_message("client_a->client_b#SEND<hello client_b>");
         }
 
 

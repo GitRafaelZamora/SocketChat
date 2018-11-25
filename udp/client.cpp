@@ -1,16 +1,7 @@
-#include <string>
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
 #include "Server/Request.cpp"
 
 class Client {
+  ///////////////////////////// Client Properties //////////////////////////////
   public : std::string username;
   public : std::string password;
   public : std::string token;
@@ -26,9 +17,11 @@ class Client {
   public : std::string message;
   public : char confirmation_buffer[1024];
 
+  //////////////////////////// Client Constructor //////////////////////////////
   Client() {
   }
 
+  /////////////////////////////// Client Methods ///////////////////////////////
   int connect() {
     // Establishing connection.
     this->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -47,38 +40,50 @@ class Client {
     this->ip = this->sockfd;
     this->port = this->servaddr.sin_port;
     return 1;
+  } // END CONNECT
+
+  Request create_login_request() {
+      Request request;
+
+      request.type = LOGIN;
+      username = get_username();
+      password = get_password();
+      this->username = username; request.username = username;
+      this->password = password; request.password = password;
+      request.print();
+
+      return request;
   }
 
-  int make_request(Request req) {
-    int ret = sendto(this->sockfd,
-                 &req,
-                 sizeof(req),
-                 0,
-                 (struct sockaddr*) &this->servaddr,
-                 sizeof(this->servaddr));
+  Request create_send_request() {
+    Request request;
+
+    request.type = SEND;
+    request.from = this->username;
+    request.to = get_input <std::string>("To : \n");
+    request.body = get_input <std::string>("Message : \n");
+    request.print();
+
+    return request;
+  }
+
+  // Send Request to the Server.
+  // ret : 0 on success | -1 on Failure
+  int make_request(Request request) {
+    int ret = sendto(this->sockfd, &request, sizeof(request),
+                 0, (struct sockaddr*) &this->servaddr, sizeof(this->servaddr));
     return ret;
   }
 
-  int make_request(Request req, std::string username, std::string password) {
-    int ret = sendto(this->sockfd,
-                 &req,
-                 sizeof(req),
-                 0,
-                 (struct sockaddr*) &this->servaddr,
-                 sizeof(this->servaddr));
-    return ret;
+  // Saving username file with password as the text.
+  void save_user(const std::string &username, const std::string &password) {
+    std::string filename = "users/" + username + ".txt";
+    std::ofstream file(filename);
+    file << password << "\n";
+    std::cout << "Saved new user.\n";
   }
 
-  int send_message(std::string) {
-    ret = sendto(sockfd,
-                 send_buffer,
-                 sizeof(send_buffer),
-                 0,
-                 (struct sockaddr*) &servaddr,
-                 sizeof(servaddr));
-    return ret;
-  }
-
+  ///////////////////////////// Client Helpers /////////////////////////////////
   template <typename T> T get_input(const std::string &strQuery) {
       std::cout << strQuery << "\n> ";
       T out = T();
@@ -113,29 +118,6 @@ class Client {
       }
 
       return password1;
-  }
-
-  // Saving username file with password as the text.
-  void save_user(const std::string &username, const std::string &password) {
-    std::string filename = "users/" + username + ".txt";
-    std::ofstream file(filename);
-    file << password << "\n";
-    std::cout << "Saved new user.\n";
-  }
-
-  void login() {
-    Request request;
-    request.type = LOGIN;
-    username = get_username();
-    password = get_password();
-    this->username = username;
-    this->password = password;
-    request.msg_body += username;
-    request.msg_body += ",";
-    request.msg_body += password;
-    request.print();
-    make_request(request);
-    online = 1;
   }
 
   void print() {
