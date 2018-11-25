@@ -1,32 +1,27 @@
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <cstring>
-#include <string>
 
 #include "Request.cpp"
 
-using namespace std;
-// 012345678901234567890
-// you->server#something
-// server->you#Error: Unrecognized message format
-
 #define BUFFSIZE 2048;
 
-bool checkCredentials(const std::string& msg) {
-    std::string s = msg;
-    std::string username = s.substr(0, s.find(","));
-    std::string password = s.substr(s.find(","), s.find("\0"));
-    std::cout << username << " " << password << endl;
-    ifstream f(msg.c_str());
-    return f.good();
+bool checkCredentials(Request request) {
+    std::string username = request.username;
+    std::string password = request.password;
+    std::cout << "username : " << username << std::endl;
+    std::cout << "password : " << password << std::endl;
+
+    std::string filename = "Users/";
+    filename += request.username;
+    filename += ".txt";
+    std::cout << "Filename : |" << filename << "|" << std::endl;
+    if (FILE *file = fopen(filename.c_str(), "r")) {
+      std::cout << "Sweet?" << std::endl;
+      fclose(file);
+      return true;
+    } else {
+      std::cout << "No Sweet?" << std::endl;
+      return false;
+    }
 }
 
 void save_user(const std::string &username, const std::string &password) {
@@ -47,7 +42,7 @@ int listen(int sockfd, Request &request, struct sockaddr_in client_address, sock
 }
 
 void send(int sockfd, char recv_buffer[1024], Request request, struct sockaddr_in client_address, socklen_t len) {
-  strcpy(recv_buffer, request.msg_body.c_str());
+  strcpy(recv_buffer, request.body.c_str());
   printf("%s\n", recv_buffer);
 
   sendto(sockfd,
@@ -97,9 +92,14 @@ int main() {
 
         switch (request.type) {
           case LOGIN:
-            std::cout << "Client Login Event" << std::endl;
-            std::cout << request.type << std::endl;
-            checkCredentials(request.msg_body);
+            std::cout << "\n============LOGIN EVENT============\n" << std::endl;
+            if (checkCredentials(request)) {
+              std::cout << "Welcome back, " << request.username << std::endl;
+            } else {
+              std::cout << "User " << request.username << " Not Found." << std::endl;
+              return -1;
+            }
+            std::cout << "\n============Login Complete============\n" << std::endl;
           break;
           case SEND:
             std::cout << "Client SEND Event" << std::endl;
