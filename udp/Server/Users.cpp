@@ -12,7 +12,7 @@ struct User {
 struct OnlineUsers {
   int numberOfUsersOnline;
 
-  std::unordered_set<User> users;
+  std::unordered_set<std::string> users;
 
   OnlineUsers() {
     this->numberOfUsersOnline = 0;
