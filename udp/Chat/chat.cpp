@@ -12,40 +12,55 @@ template <typename T> T get_input(const std::string &strQuery) {
     return out;
 }
 
-int chat_menu() {
+void clear_stdin_buffer() {
+  std::cin.clear();
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
 
-  int choice = get_input <int>(
-       "=============CHAT MENU============" "\n"
-       "[1] Login" "\n"
-       "[2] Send Message\n"
-       "[3] Register" "\n"
-       "[4] Logout" "\n"
-       "[5] Print Client" "\n"
-       "[6] Whose Online" "\n"
-       "[7] Exit");
-      return choice;
+int chat_menu() {
+  int choice;
+  choice = get_input <int>("\n=============CHAT MENU============\n"
+                            "[1] Login\n"
+                            "[2] Send Message\n"
+                            "[3] Register\n"
+                            "[4] Logout\n"
+                            "[5] Print Client\n"
+                            "[6] Whose Online\n"
+                            "[7] Exit\n");
+  return choice;
 }
 
 int main() {
     // Creating a new client.
     Client client;
+    bool skip;
+    int maxfd;
     fd_set read_set;
     FD_ZERO(&read_set);
+
     int success = client.connect();
     if (success < 0) {
       return -1;
     }
-    bool skip;
+
+    maxfd = client.sockfd_rx + 1;
+
     while (1) {
-        // Use select to wait on keyboard input or socket receiving.
-        FD_SET(fileno(stdin), &read_set);
-        FD_SET(client.sockfd, &read_set);
-        if (FD_ISSET(fileno(stdin), &read_set)) {
-          
-        }
-        int choice = chat_menu();
+      Request request;
+      int choice;
+
+      std::cout << "Client listening for event...\n";
+
+      // Use select to wait on keyboard input or socket receiving.
+      FD_SET(fileno(stdin), &read_set);
+      FD_SET(client.sockfd_rx, &read_set);
+      select(maxfd, &read_set, NULL, NULL, NULL);
+
+      if (FD_ISSET(fileno(stdin), &read_set)) {
+        std::cout << "Keyboard Event!";
+        choice = chat_menu( );
+        std::cout << "choice : " << choice << std::endl;
         skip = true;
-        Request request;
         switch (choice) {
            case 1:
             request.type = LOGIN_SENT;
@@ -53,6 +68,7 @@ int main() {
             client.make_request(request);
             break;
           case 2:
+            std::cout << "case 2\n";
             request.type = SEND;
             if (client.online) {
               request = client.create_send_request();
@@ -83,34 +99,29 @@ int main() {
             client.make_request(request);
             break;
           default:
+            std::cout << "DEFAULT\n";
             request.type = SEND;
             request = client.create_send_request();
             client.make_request(request);
+        } // END SWITCH STATEMENT
+
+      } // END KEYBOARD EVENT IF STATEMENT
+
+      if (FD_ISSET(client.sockfd_rx, &read_set)) {
+        std::cout << "SERVER EVENT!";
+
+        // client.print(); // For DEBUGGING purposes
+        client.ret = recvfrom(client.sockfd_rx, &request,
+                              sizeof(request), 0, NULL, NULL);
+        if (client.ret <= 0) {
+            printf("recvfrom() error: %s.\n", strerror(errno));
+            return -1;
         }
-        // Grabbing input from stdin storing it in send_buffer.
-        // fgets(client.send_buffer, sizeof(client.send_buffer), stdin);
+        // Client will handle the Server RESPONSE;
+        client.handle(request);
+      }
 
-        if (choice != 5) {
-          if (skip) {
-            // grabbing the size of our confirmation_buffer.
-            socklen_t len;
-            len = sizeof(request);
-
-            // grabbing the size of the return msg.
-            // storing the return msg in confirmation_buffer.
-            // client.print();
-            client.ret = recvfrom(client.sockfd, &request, sizeof(request), 0,
-                            NULL, NULL);
-
-            client.handle(request);
-            printf("ACK: %u\n", request.type);
-            if (client.ret <= 0) {
-                printf("recvfrom() error: %s.\n", strerror(errno));
-                return -1;
-            }
-          }
-        }
-    }
+    } // END WHILE LOOP
 
     return 0;
 }

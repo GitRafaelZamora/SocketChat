@@ -60,7 +60,7 @@ void send(int sockfd, Request request, struct sockaddr_in client_address, sockle
 int main() {
     int ret;
     int sockfd;
-    struct sockaddr_in servaddr, client_address;
+    struct sockaddr_in servaddr, client_address, forward_address;
     char recv_buffer[1024];
     char send_buffer[1024];
     socklen_t len;
@@ -85,11 +85,9 @@ int main() {
     printf("%s", "listening on port ");
     printf("%d\n", servaddr.sin_addr.s_addr);
 
-    // request.parse("​duolu->server#login<123456>");
-
     while (1) {
         len = sizeof(client_address);
-        printf("server.cpp len: %d\n", len);
+        // printf("server.cpp len: %d\n", len);
 
         // The address of the client.
         // ret = listen(sockfd, request, client_address, len);
@@ -105,10 +103,16 @@ int main() {
             std::cout << "\n============LOGIN EVENT============\n" << std::endl;
             if (checkCredentials(request)) {
               request.type = ONLINE;
-              online_users.user_joined(request.username, request.from_addr); // TODO: Store Port for the user
+              std::cout << "Client Port: " << client_address.sin_port << std::endl;
+              online_users.user_joined(request.username, client_address); // TODO: Store Port for the user
             } else {
               request.type = FAILED;
             }
+            break;
+          case SHOW_ALL_ONLINE_USERS:
+            std::cout << "\n============SHOW ONLINE USERS EVENT============\n" << std::endl;
+            online_users.show_all_users(); // TODO: SHOW_ALL_ONLINE_USERS is online showing on the server side make sure that the clients have acces to this data.
+            std::cout << "\n============END LOG============\n" << std::endl;
             break;
           case LOGOUT_SENT:
             std::cout << "Client LOGOUT_SENT Event" << std::endl;
@@ -122,12 +126,15 @@ int main() {
             break;
           case SEND:
             std::cout << "\n============SEND EVENT============\n" << std::endl;
+            forward_address = online_users.find_user_address(request.to);
             std::cout << "From : " << request.from << std::endl;
             std::cout << "To : " << request.to << std::endl;
-            std::cout << "Port : " << online_users.find_user(request.to).sin_port << std::endl;
+            std::cout << "Port : " << forward_address.sin_port << std::endl;
+            std::cout << "sin_family : " << forward_address.sin_family << std::endl;
             std::cout << "Body : " << request.body << std::endl;
-            send(sockfd, request, online_users.find_user(request.to), len);
-            
+
+            send(sockfd, request, forward_address, len);
+            std::cout << "\n============END LOG============\n" << std::endl;
             break;
           case ONLINE:
             std::cout << "Client ONLINE Event" << std::endl;
@@ -140,11 +147,6 @@ int main() {
           case FAILED:
             std::cout << "Client FAILED Event" << std::endl;
             std::cout << request.type << std::endl;
-            break;
-          case SHOW_ALL_ONLINE_USERS:
-            std::cout << "Client SHOW_ALL_ONLINE_USERS Event" << std::endl;
-            std::cout << request.type << std::endl;
-            online_users.show_all_users(); // TODO: SHOW_ALL_ONLINE_USERS is online showing on the server side make sure that the clients have acces to this data.
             break;
         }
         if (request.type != SEND) {

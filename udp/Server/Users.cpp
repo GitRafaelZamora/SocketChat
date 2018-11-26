@@ -3,6 +3,7 @@
 #include <array>
 #include <unordered_set>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <map>
 
 struct OnlineUsers {
@@ -14,16 +15,17 @@ struct OnlineUsers {
     this->numberOfUsersOnline = 0;
   }
 
-  void user_joined(std::string username, struct sockaddr_in port) {
+  void user_joined(std::string username, struct sockaddr_in forward_addrr) {
     this->numberOfUsersOnline++;
-    this->users.insert(std::pair<std::string, struct sockaddr_in>(username, port));
+    this->users.insert(std::pair<std::string, struct sockaddr_in>(username, forward_addrr));
   }
 
   void user_left(std::string username) {
+    this->numberOfUsersOnline--;
     this->users.erase ( username );
   }
 
-  struct sockaddr_in find_user(std::string username) {
+  struct sockaddr_in find_user_address(std::string username) {
     return this->users.find(username)->second;
   }
 

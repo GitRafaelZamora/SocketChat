@@ -7,12 +7,11 @@ class Client {
   public : std::string password;
   public : std::string token;
   public : int online = 0;
-  public : long ip;
-  public : long port;
 
   public : int ret, serv;
 
-  public : int sockfd;
+  public : int sockfd_tx = 0;
+  public : int sockfd_rx = 0;
   public : struct sockaddr_in serv_addr, client_addr;
   public : char send_buffer[1024];
   public : std::string message;
@@ -25,8 +24,8 @@ class Client {
   /////////////////////////////// Client Methods ///////////////////////////////
   int connect() {
     // Establishing connection.
-    this->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (this->sockfd < 0) {
+    this->sockfd_tx = socket(AF_INET, SOCK_DGRAM, 0);
+    if (this->sockfd_tx < 0) {
 	     printf("socket() error: %s.\n", strerror(errno));
        return -1;
     }
@@ -37,6 +36,12 @@ class Client {
     this->serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     this->serv_addr.sin_port = htons(31000);
 
+    sockfd_rx = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd_rx < 0) {
+    	printf("socket() error: %s.\n", strerror(errno));
+      return -1;
+    }
+
     memset(&this->client_addr, 0, sizeof(this->client_addr));
     this->client_addr.sin_family = AF_INET;
     this->client_addr.sin_addr.s_addr = inet_addr("1​27.0.0.1​");
@@ -44,15 +49,15 @@ class Client {
     std::cout << random << std::endl;
     this->client_addr.sin_port = htons(random);
 
-    struct timeval tv;
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
-    bind(this->sockfd, (struct sockaddr *) &client_addr, sizeof(client_addr));
+    // struct timeval tv;
+    // tv.tv_sec = 1;
+    // tv.tv_usec = 0;
+    // setsockopt(this->sockfd_rx, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    // setsockopt(this->sockfd_tx, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+
+    bind(this->sockfd_rx, (struct sockaddr *) &client_addr, sizeof(client_addr));
 
     printf("new client connection: %d\n", this->serv_addr.sin_port);
-    this->ip = this->sockfd;
-    this->port = this->client_addr.sin_port;
     return 1;
   } // END CONNECT
 
@@ -64,7 +69,6 @@ class Client {
       password = get_password();
       this->username = username; request.username = username;
       this->password = password; request.password = password;
-      request.from_addr = this->client_addr;
       request.print();
 
       return request;
@@ -83,8 +87,8 @@ class Client {
 
     request.type = SEND;
     request.from = this->username;
-    request.to = get_input <std::string>("To : \n");
-    request.body = get_input <std::string>("Message : \n");
+    request.to = get_input <std::string>("To : ");
+    request.body = get_input <std::string>("Message : ");
     request.print();
 
     return request;
@@ -114,7 +118,7 @@ class Client {
   // Send Request to the Server.
   // ret : 0 on success | -1 on Failure
   int make_request(Request request) {
-    int ret = sendto(this->sockfd, &request, sizeof(request),
+    int ret = sendto(this->sockfd_rx, &request, sizeof(request),
                  0, (struct sockaddr*) &this->serv_addr, sizeof(this->serv_addr));
     return ret;
   }
@@ -143,7 +147,10 @@ class Client {
         std::cout << "\n============REGISTER RESPONSE============\n" << std::endl;
         break;
       case SEND:
-        std::cout << "\n============SEND RESPONSE============\n" << std::endl;
+        std::cout << "\n============INCOMING MESSAGE============\n" << std::endl;
+        std::cout << "Message From: " << request.from << std::endl;
+        std::cout << "Body : " << request.body << std::endl;
+        std::cout << "\n============END MESSAGE============\n" << std::endl;
         break;
       case ONLINE:
         std::cout << "\n============ONLINE RESPONSE============\n" << std::endl;
@@ -158,6 +165,9 @@ class Client {
         break;
       case MESSAGE_SENT:
         std::cout << "\n============MESSAGE_SENT RESPONSE============\n" << std::endl;
+        break;
+      default:
+        std::cout << "DEFAULT\n";
         break;
     }
   }
@@ -212,9 +222,8 @@ class Client {
     std::cout << "Username : " << this->username << std::endl;
     std::cout << "Password : " << this->password << std::endl;
     std::cout << "Online : " << this->online << std::endl;
-    std::cout << "IP : " << this->ip << std::endl;
-    std::cout << "PORT : " << this->port << std::endl;
-    std::cout << "Sockfd : " << this->sockfd << std::endl;
+    std::cout << "PORT : " << this->client_addr.sin_port << std::endl;
+    std::cout << "Sockfd : " << this->sockfd_rx << std::endl;
     std::cout << "Servaddr : " << (struct sockaddr *) &this->serv_addr << std::endl;
     std::cout << "Clientaddr : " << (struct sockaddr *) &this->client_addr << std::endl;
     std::cout << "Token : " << this->token << std::endl;

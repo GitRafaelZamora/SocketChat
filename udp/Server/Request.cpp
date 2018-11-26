@@ -77,7 +77,6 @@ struct Request {
     std::cout << "to : " << this->to << std::endl;
     std::cout << "host : " << this->host << std::endl;
     std::cout << "body : " << this->body << std::endl;
-    std::cout << "type : " << this->type << std::endl;
-    std::cout << "FOUND NIL ERROR : FALSE" << std::endl;
+    std::cout << "Request Type : " << this->type << std::endl;
   }
 };
