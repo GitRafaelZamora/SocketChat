@@ -104,9 +104,8 @@ int main() {
           case LOGIN_SENT:
             std::cout << "\n============LOGIN EVENT============\n" << std::endl;
             if (checkCredentials(request)) {
-              std::cout << "Welcome back, " << request.username << std::endl;
               request.type = ONLINE;
-              online_users.user_joined(request.username);
+              online_users.user_joined(request.username, request.from_addr); // TODO: Store Port for the user
             } else {
               request.type = FAILED;
             }
@@ -122,12 +121,13 @@ int main() {
             std::cout << request.type << std::endl;
             break;
           case SEND:
-            std::cout << "Client SEND Event" << std::endl;
-            std::cout << request.type << std::endl;
-            std::cout << "To : " << request.to << std::endl;
+            std::cout << "\n============SEND EVENT============\n" << std::endl;
             std::cout << "From : " << request.from << std::endl;
+            std::cout << "To : " << request.to << std::endl;
+            std::cout << "Port : " << online_users.find_user(request.to).sin_port << std::endl;
             std::cout << "Body : " << request.body << std::endl;
-
+            send(sockfd, request, online_users.find_user(request.to), len);
+            
             break;
           case ONLINE:
             std::cout << "Client ONLINE Event" << std::endl;
@@ -150,12 +150,7 @@ int main() {
         if (request.type != SEND) {
           // Return the request status.
           send(sockfd, request, client_address, len);
-          // request.print();
-        } else {
-          send(sockfd, request, client_address, len);
         }
-
-
 
         if (ret <= 0) {
             printf("recvfrom() error: %s.\n", strerror(errno));

@@ -44,6 +44,10 @@ class Client {
     std::cout << random << std::endl;
     this->client_addr.sin_port = htons(random);
 
+    struct timeval tv;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     bind(this->sockfd, (struct sockaddr *) &client_addr, sizeof(client_addr));
 
     printf("new client connection: %d\n", this->serv_addr.sin_port);
@@ -60,6 +64,7 @@ class Client {
       password = get_password();
       this->username = username; request.username = username;
       this->password = password; request.password = password;
+      request.from_addr = this->client_addr;
       request.print();
 
       return request;
@@ -143,6 +148,7 @@ class Client {
       case ONLINE:
         std::cout << "\n============ONLINE RESPONSE============\n" << std::endl;
         this->online = 1;
+        std::cout << "Welcome back, " << request.username << " you are now logged in." << std::endl;
         break;
       case FAILED:
         std::cout << "\n============FAILED RESPONSE============\n" << std::endl;

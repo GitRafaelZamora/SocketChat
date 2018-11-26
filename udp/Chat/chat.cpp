@@ -1,4 +1,4 @@
-#include "../Client.cpp"
+#include "../client.cpp"
 
 template <typename T> T get_input(const std::string &strQuery) {
     std::cout << strQuery << "\n> ";
@@ -13,6 +13,7 @@ template <typename T> T get_input(const std::string &strQuery) {
 }
 
 int chat_menu() {
+
   int choice = get_input <int>(
        "=============CHAT MENU============" "\n"
        "[1] Login" "\n"
@@ -28,12 +29,20 @@ int chat_menu() {
 int main() {
     // Creating a new client.
     Client client;
+    fd_set read_set;
+    FD_ZERO(&read_set);
     int success = client.connect();
     if (success < 0) {
       return -1;
     }
     bool skip;
     while (1) {
+        // Use select to wait on keyboard input or socket receiving.
+        FD_SET(fileno(stdin), &read_set);
+        FD_SET(client.sockfd, &read_set);
+        if (FD_ISSET(fileno(stdin), &read_set)) {
+          
+        }
         int choice = chat_menu();
         skip = true;
         Request request;

@@ -3,44 +3,36 @@
 #include <array>
 #include <unordered_set>
 #include <netinet/in.h>
-
-struct User {
-  std::string username;
-  struct sockaddr_in address;
-};
+#include <map>
 
 struct OnlineUsers {
   int numberOfUsersOnline;
 
-  std::unordered_set<std::string> users;
+  std::map<std::string, struct sockaddr_in> users;
 
   OnlineUsers() {
     this->numberOfUsersOnline = 0;
   }
 
-  void user_joined(std::string username) {
+  void user_joined(std::string username, struct sockaddr_in port) {
     this->numberOfUsersOnline++;
-    this->users.insert(username);
+    this->users.insert(std::pair<std::string, struct sockaddr_in>(username, port));
   }
 
   void user_left(std::string username) {
     this->users.erase ( username );
   }
 
-  void find_user(std::string username) {
-    std::unordered_set<std::string>::const_iterator finder = this->users.find(username);
-    if ( finder == this->users.end() ) {
-      std::cout << "not found in myset";
-    } else {
-      std::cout << *finder << " is in myset";
-    }
-    std::cout << std::endl;
+  struct sockaddr_in find_user(std::string username) {
+    return this->users.find(username)->second;
   }
 
   void show_all_users() {
     std::cout << "Showing all online users : \n";
-    for (const std::string& x: this->users) std::cout << " " << x;
-    std::cout <<  std::endl;
+    for ( const auto &user : this->users ) {
+        std::cout << "Username : " << user.first << "\n";
+        std::cout << "Port : " << user.second.sin_port << "\n";
+    }
   }
 
   void print() {
