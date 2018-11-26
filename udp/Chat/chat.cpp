@@ -14,10 +14,14 @@ template <typename T> T get_input(const std::string &strQuery) {
 
 int chat_menu() {
   int choice = get_input <int>(
-       "Hello, Would you like to log in or register?" "\n"
+       "=============CHAT MENU============" "\n"
        "[1] Login" "\n"
-       "[2] Register" "\n"
-       "[3] Exit");
+       "[2] Send Message\n"
+       "[3] Register" "\n"
+       "[4] Logout" "\n"
+       "[5] Print Client" "\n"
+       "[6] Whose Online" "\n"
+       "[7] Exit");
       return choice;
 }
 
@@ -28,53 +32,74 @@ int main() {
     if (success < 0) {
       return -1;
     }
-
-    int choice = chat_menu();
-    Request request;
-    switch (choice) {
-       case 1:
-        request.type = LOGIN;
-        request = client.create_login_request();
-        client.make_request(request);
-        break;
-      case 2:
-        request.type = SEND;
-        client.make_request(request);
-        break;
-      default:
-        request.type = SEND;
-        request = client.create_send_request();
-        client.make_request(request);
-    }
-
+    bool skip;
     while (1) {
-        // Grabbing input from stdin storing it in send_buffer.
-        fgets(client.send_buffer, sizeof(client.send_buffer), stdin);
-        // strncat(udp_signature, send_buffer, 15);
-
-        // sending send_buffer to the server.
-        if (client.online) {
-          // client.send_message("client_a->client_b#SEND<hello client_b>");
+        int choice = chat_menu();
+        skip = true;
+        Request request;
+        switch (choice) {
+           case 1:
+            request.type = LOGIN_SENT;
+            request = client.create_login_request();
+            client.make_request(request);
+            break;
+          case 2:
+            request.type = SEND;
+            if (client.online) {
+              request = client.create_send_request();
+              client.make_request(request);
+            } else {
+              std::cout << "Please login to send message.\n";
+              skip = false;
+            }
+            break;
+          case 3:
+            request.type = REGISTER;
+            request = client.create_user_request();
+            client.make_request(request);
+            break;
+          case 4:
+            request.type = LOGOUT_SENT;
+            request = client.create_logout_request();
+            client.make_request(request);
+            std::cout << "GOODBYE!" << std::endl;
+            client.print();
+            break;
+          case 5:
+            client.print();
+            break;
+          case 6:
+            request.type = SHOW_ALL_ONLINE_USERS;
+            request = client.create_show_online_users_request();
+            client.make_request(request);
+            break;
+          default:
+            request.type = SEND;
+            request = client.create_send_request();
+            client.make_request(request);
         }
+        // Grabbing input from stdin storing it in send_buffer.
+        // fgets(client.send_buffer, sizeof(client.send_buffer), stdin);
 
+        if (choice != 5) {
+          if (skip) {
+            // grabbing the size of our confirmation_buffer.
+            socklen_t len;
+            len = sizeof(request);
 
-        // grabbing the size of our confirmation_buffer.
-        socklen_t len;
-        len = sizeof(client.confirmation_buffer);
+            // grabbing the size of the return msg.
+            // storing the return msg in confirmation_buffer.
+            // client.print();
+            client.ret = recvfrom(client.sockfd, &request, sizeof(request), 0,
+                            NULL, NULL);
 
-        // grabbing the size of the return msg.
-        // storing the return msg in confirmation_buffer.
-        client.serv = recvfrom(client.sockfd,
-                        client.confirmation_buffer,
-                        sizeof(client.confirmation_buffer),
-                        0,
-                        (struct sockaddr *) &client.servaddr, // Where the message is sent.
-                        &len);
-
-        printf("ACK: %s\n", client.confirmation_buffer);
-        if (client.ret <= 0) {
-            printf("recvfrom() error: %s.\n", strerror(errno));
-            return -1;
+            client.handle(request);
+            printf("ACK: %u\n", request.type);
+            if (client.ret <= 0) {
+                printf("recvfrom() error: %s.\n", strerror(errno));
+                return -1;
+            }
+          }
         }
     }
 

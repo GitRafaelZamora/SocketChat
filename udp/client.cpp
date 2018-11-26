@@ -1,4 +1,5 @@
 #include "Server/Request.cpp"
+#include <random>
 
 class Client {
   ///////////////////////////// Client Properties //////////////////////////////
@@ -12,7 +13,7 @@ class Client {
   public : int ret, serv;
 
   public : int sockfd;
-  public : struct sockaddr_in servaddr;
+  public : struct sockaddr_in serv_addr, client_addr;
   public : char send_buffer[1024];
   public : std::string message;
   public : char confirmation_buffer[1024];
@@ -31,21 +32,30 @@ class Client {
     }
 
     // Setting up the server address.
-    memset(&this->servaddr, 0, sizeof(this->servaddr));
-    this->servaddr.sin_family = AF_INET;
-    this->servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    this->servaddr.sin_port = htons(31000);
+    memset(&this->serv_addr, 0, sizeof(this->serv_addr));
+    this->serv_addr.sin_family = AF_INET;
+    this->serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    this->serv_addr.sin_port = htons(31000);
 
-    printf("new client connection: %d\n", this->servaddr.sin_port);
+    memset(&this->client_addr, 0, sizeof(this->client_addr));
+    this->client_addr.sin_family = AF_INET;
+    this->client_addr.sin_addr.s_addr = inet_addr("1​27.0.0.1​");
+    int random = generate_random_port();
+    std::cout << random << std::endl;
+    this->client_addr.sin_port = htons(random);
+
+    bind(this->sockfd, (struct sockaddr *) &client_addr, sizeof(client_addr));
+
+    printf("new client connection: %d\n", this->serv_addr.sin_port);
     this->ip = this->sockfd;
-    this->port = this->servaddr.sin_port;
+    this->port = this->client_addr.sin_port;
     return 1;
   } // END CONNECT
 
   Request create_login_request() {
       Request request;
 
-      request.type = LOGIN;
+      request.type = LOGIN_SENT;
       username = get_username();
       password = get_password();
       this->username = username; request.username = username;
@@ -53,6 +63,14 @@ class Client {
       request.print();
 
       return request;
+  }
+
+  Request create_show_online_users_request() {
+    Request request;
+
+    request.type = SHOW_ALL_ONLINE_USERS;
+
+    return request;
   }
 
   Request create_send_request() {
@@ -67,11 +85,32 @@ class Client {
     return request;
   }
 
+  Request create_user_request() {
+    Request request;
+
+    request.type = REGISTER;
+    request.username = get_username(); this->username = request.username;
+    request.password = get_password(); this->password = request.password;
+    request.print();
+
+    return request;
+  }
+
+  Request create_logout_request() {
+    Request request;
+
+    request.type = LOGOUT_SENT;
+    request.username = get_username();
+    request.print();
+
+    return request;
+  }
+
   // Send Request to the Server.
   // ret : 0 on success | -1 on Failure
   int make_request(Request request) {
     int ret = sendto(this->sockfd, &request, sizeof(request),
-                 0, (struct sockaddr*) &this->servaddr, sizeof(this->servaddr));
+                 0, (struct sockaddr*) &this->serv_addr, sizeof(this->serv_addr));
     return ret;
   }
 
@@ -81,6 +120,40 @@ class Client {
     std::ofstream file(filename);
     file << password << "\n";
     std::cout << "Saved new user.\n";
+  }
+
+  void handle(Request request) {
+    switch (request.type) {
+      case LOGIN_SENT:
+        std::cout << "\n============LOGIN RESPONSE============\n" << std::endl;
+        break;
+      case LOGOUT_SENT:
+        std::cout << "\n============LOGOUT_SENT RESPONSE============\n" << std::endl;
+        break;
+      case OFFLINE:
+        std::cout << "\n============OFFLINE RESPONSE============\n" << std::endl;
+        this->online = 0;
+        break;
+      case REGISTER:
+        std::cout << "\n============REGISTER RESPONSE============\n" << std::endl;
+        break;
+      case SEND:
+        std::cout << "\n============SEND RESPONSE============\n" << std::endl;
+        break;
+      case ONLINE:
+        std::cout << "\n============ONLINE RESPONSE============\n" << std::endl;
+        this->online = 1;
+        break;
+      case FAILED:
+        std::cout << "\n============FAILED RESPONSE============\n" << std::endl;
+        break;
+      case SHOW_ALL_ONLINE_USERS:
+        std::cout << "\n============SHOW_ALL_ONLINE_USERS RESPONSE============\n" << std::endl;
+        break;
+      case MESSAGE_SENT:
+        std::cout << "\n============MESSAGE_SENT RESPONSE============\n" << std::endl;
+        break;
+    }
   }
 
   ///////////////////////////// Client Helpers /////////////////////////////////
@@ -93,7 +166,6 @@ class Client {
           std::cout << "Error!" "\n";
           std::cout << strQuery << "\n> ";
       }
-      std::cout << out << " got this\n";
       return out;
   }
 
@@ -120,11 +192,25 @@ class Client {
       return password1;
   }
 
+  int generate_random_port() {
+    std::random_device rd;     // only used once to initialise (seed) engine
+    std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+    std::uniform_int_distribution<int> uni(6000,30000); // guaranteed unbiased
+
+    auto random_integer = uni(rng);
+    return random_integer;
+  }
+
   void print() {
+    std::cout << "==================CLIENT DETAILS==========" << std::endl;
     std::cout << "Username : " << this->username << std::endl;
     std::cout << "Password : " << this->password << std::endl;
+    std::cout << "Online : " << this->online << std::endl;
     std::cout << "IP : " << this->ip << std::endl;
     std::cout << "PORT : " << this->port << std::endl;
+    std::cout << "Sockfd : " << this->sockfd << std::endl;
+    std::cout << "Servaddr : " << (struct sockaddr *) &this->serv_addr << std::endl;
+    std::cout << "Clientaddr : " << (struct sockaddr *) &this->client_addr << std::endl;
     std::cout << "Token : " << this->token << std::endl;
   }
 };

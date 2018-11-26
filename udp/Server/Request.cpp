@@ -18,7 +18,8 @@
 #include <string.h>
 #include <string>
 
-enum RequestType { LOGIN, SEND };
+enum RequestType { LOGIN_SENT, SEND, REGISTER, SHOW_ALL_ONLINE_USERS,
+                   ONLINE, OFFLINE, LOGOUT_SENT, FAILED, MESSAGE_SENT };
 
 struct Request {
   // Required fields
@@ -28,20 +29,16 @@ struct Request {
   std::string from;
   std::string to;
   std::string body;
+  int message_id;
+  struct sockaddr_in from_addr, to_addr;
 
-  // Dependant on Type: LOGIN
+  // Dependant on Type: LOGIN && REGISTER
   std::string username;
   std::string password;
 
   std::string host;
 
   Request() {
-  }
-
-  Request(RequestType type, std::string host, std::string body) {
-    this->type = type;
-    this->host = host;
-    this->body = body;
   }
 
   std::string parse(std::string buffer) {
