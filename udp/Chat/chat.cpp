@@ -49,7 +49,7 @@ int main() {
       Request request;
       int choice;
 
-      std::cout << "\nClient listening for event...\n";
+      std::cout << "\nClient listening for event... ( Press ENTER to start )\n";
 
       // Use select to wait on keyboard input or socket receiving.
       FD_SET(fileno(stdin), &read_set);
