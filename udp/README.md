@@ -23,5 +23,6 @@
 > Execute the Chat/chat file to run a chat client.
 
 ## Images :
+![alt text][logo]
 
 [logo]: https://github.com/GitRafaelZamora/SocketChat/blob/master/udp/ScreenShot.png "Console App Screen Shot"
