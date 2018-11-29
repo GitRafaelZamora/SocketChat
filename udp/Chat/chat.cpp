@@ -49,7 +49,7 @@ int main() {
       Request request;
       int choice;
 
-      std::cout << "Client listening for event...\n";
+      std::cout << "\nClient listening for event...\n";
 
       // Use select to wait on keyboard input or socket receiving.
       FD_SET(fileno(stdin), &read_set);
@@ -59,7 +59,6 @@ int main() {
       if (FD_ISSET(fileno(stdin), &read_set)) {
         std::cout << "Keyboard Event!";
         choice = chat_menu( );
-        std::cout << "choice : " << choice << std::endl;
         skip = true;
         switch (choice) {
            case 1:
@@ -85,10 +84,8 @@ int main() {
             break;
           case 4:
             request.type = LOGOUT_SENT;
-            request = client.create_logout_request();
+            request = client.create_logout_request(client.username);
             client.make_request(request);
-            std::cout << "GOODBYE!" << std::endl;
-            client.print();
             break;
           case 5:
             client.print();
@@ -108,7 +105,7 @@ int main() {
       } // END KEYBOARD EVENT IF STATEMENT
 
       if (FD_ISSET(client.sockfd_rx, &read_set)) {
-        std::cout << "SERVER EVENT!";
+        std::cout << "\nSERVER EVENT!";
 
         // client.print(); // For DEBUGGING purposes
         client.ret = recvfrom(client.sockfd_rx, &request,

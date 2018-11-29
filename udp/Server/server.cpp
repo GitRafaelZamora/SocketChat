@@ -57,6 +57,10 @@ void send(int sockfd, Request request, struct sockaddr_in client_address, sockle
         (struct sockaddr *) &client_address, len);
 }
 
+void printEndLog() {
+  std::cout << "\n============END LOG============\n" << std::endl;
+}
+
 int main() {
     int ret;
     int sockfd;
@@ -82,9 +86,6 @@ int main() {
          (struct sockaddr *) &servaddr,
          sizeof(servaddr));
 
-    printf("%s", "listening on port ");
-    printf("%d\n", servaddr.sin_addr.s_addr);
-
     while (1) {
         len = sizeof(client_address);
         // printf("server.cpp len: %d\n", len);
@@ -103,26 +104,28 @@ int main() {
             std::cout << "\n============LOGIN EVENT============\n" << std::endl;
             if (checkCredentials(request)) {
               request.type = ONLINE;
-              std::cout << "Client Port: " << client_address.sin_port << std::endl;
               online_users.user_joined(request.username, client_address); // TODO: Store Port for the user
             } else {
               request.type = FAILED;
             }
+            printEndLog();
             break;
           case SHOW_ALL_ONLINE_USERS:
             std::cout << "\n============SHOW ONLINE USERS EVENT============\n" << std::endl;
-            online_users.show_all_users(); // TODO: SHOW_ALL_ONLINE_USERS is online showing on the server side make sure that the clients have acces to this data.
-            std::cout << "\n============END LOG============\n" << std::endl;
+            request.body = online_users.show_all_users();
+            printEndLog();
             break;
           case LOGOUT_SENT:
-            std::cout << "Client LOGOUT_SENT Event" << std::endl;
+            std::cout << "\n============LOGOUT SENT EVENT============\n" << std::endl;
             std::cout << request.type << std::endl;
             online_users.user_left(request.username);
             request.type = OFFLINE;
+            printEndLog();
             break;
           case REGISTER:
-            std::cout << "Client REGISTER Event" << std::endl;
-            std::cout << request.type << std::endl;
+            std::cout << "\n============REGISTER EVENT============\n" << std::endl;
+            std::cout << "Registered new user : " << request.username << std::endl;
+            printEndLog();
             break;
           case SEND:
             std::cout << "\n============SEND EVENT============\n" << std::endl;
@@ -132,21 +135,24 @@ int main() {
             std::cout << "Port : " << forward_address.sin_port << std::endl;
             std::cout << "sin_family : " << forward_address.sin_family << std::endl;
             std::cout << "Body : " << request.body << std::endl;
-
+            // send the message back to the correct reciever.
             send(sockfd, request, forward_address, len);
-            std::cout << "\n============END LOG============\n" << std::endl;
+            printEndLog();
             break;
           case ONLINE:
-            std::cout << "Client ONLINE Event" << std::endl;
+            std::cout << "\n============ONLINE EVENT============\n" << std::endl;
             std::cout << request.type << std::endl;
+            printEndLog();
             break;
           case OFFLINE:
-            std::cout << "Client ONLINE Event" << std::endl;
+            std::cout << "\n============OFFLINE EVENT============\n" << std::endl;
             std::cout << request.type << std::endl;
+            printEndLog();
             break;
           case FAILED:
-            std::cout << "Client FAILED Event" << std::endl;
+            std::cout << "\n============FAILED EVENT============\n" << std::endl;
             std::cout << request.type << std::endl;
+            printEndLog();
             break;
         }
         if (request.type != SEND) {

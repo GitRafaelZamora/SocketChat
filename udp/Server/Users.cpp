@@ -29,12 +29,15 @@ struct OnlineUsers {
     return this->users.find(username)->second;
   }
 
-  void show_all_users() {
-    std::cout << "Showing all online users : \n";
+  std::string show_all_users() {
+    std::string users;
+
     for ( const auto &user : this->users ) {
         std::cout << "Username : " << user.first << "\n";
-        std::cout << "Port : " << user.second.sin_port << "\n";
+        users += user.first + "\t";
     }
+
+    return users;
   }
 
   void print() {

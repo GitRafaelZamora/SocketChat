@@ -46,18 +46,10 @@ class Client {
     this->client_addr.sin_family = AF_INET;
     this->client_addr.sin_addr.s_addr = inet_addr("1​27.0.0.1​");
     int random = generate_random_port();
-    std::cout << random << std::endl;
     this->client_addr.sin_port = htons(random);
-
-    // struct timeval tv;
-    // tv.tv_sec = 1;
-    // tv.tv_usec = 0;
-    // setsockopt(this->sockfd_rx, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
-    // setsockopt(this->sockfd_tx, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
     bind(this->sockfd_rx, (struct sockaddr *) &client_addr, sizeof(client_addr));
 
-    printf("new client connection: %d\n", this->serv_addr.sin_port);
     return 1;
   } // END CONNECT
 
@@ -69,7 +61,6 @@ class Client {
       password = get_password();
       this->username = username; request.username = username;
       this->password = password; request.password = password;
-      request.print();
 
       return request;
   }
@@ -89,7 +80,6 @@ class Client {
     request.from = this->username;
     request.to = get_input <std::string>("To : ");
     request.body = get_input <std::string>("Message : ");
-    request.print();
 
     return request;
   }
@@ -100,17 +90,18 @@ class Client {
     request.type = REGISTER;
     request.username = get_username(); this->username = request.username;
     request.password = get_password(); this->password = request.password;
-    request.print();
 
     return request;
   }
 
-  Request create_logout_request() {
+  Request create_logout_request(std::string username) {
     Request request;
 
     request.type = LOGOUT_SENT;
     request.username = get_username();
-    request.print();
+    if (username != request.username) {
+      request.type = FAILED;
+    }
 
     return request;
   }
@@ -131,20 +122,29 @@ class Client {
     std::cout << "Saved new user.\n";
   }
 
+  void printEndResponse() {
+    std::cout << "\n===================END RESPONSE===================\n";
+  }
+
   void handle(Request request) {
     switch (request.type) {
       case LOGIN_SENT:
         std::cout << "\n============LOGIN RESPONSE============\n" << std::endl;
+        printEndResponse();
         break;
       case LOGOUT_SENT:
         std::cout << "\n============LOGOUT_SENT RESPONSE============\n" << std::endl;
+        printEndResponse();
         break;
       case OFFLINE:
         std::cout << "\n============OFFLINE RESPONSE============\n" << std::endl;
         this->online = 0;
+        std::cout << "See you later, " << request.username << std::endl;
+        printEndResponse();
         break;
       case REGISTER:
         std::cout << "\n============REGISTER RESPONSE============\n" << std::endl;
+        printEndResponse();
         break;
       case SEND:
         std::cout << "\n============INCOMING MESSAGE============\n" << std::endl;
@@ -156,15 +156,21 @@ class Client {
         std::cout << "\n============ONLINE RESPONSE============\n" << std::endl;
         this->online = 1;
         std::cout << "Welcome back, " << request.username << " you are now logged in." << std::endl;
+        printEndResponse();
         break;
       case FAILED:
         std::cout << "\n============FAILED RESPONSE============\n" << std::endl;
+        std::cout << "Cannot Complete Request.\n";
+        printEndResponse();
         break;
       case SHOW_ALL_ONLINE_USERS:
         std::cout << "\n============SHOW_ALL_ONLINE_USERS RESPONSE============\n" << std::endl;
+        std::cout << request.body << std::endl;
+        printEndResponse();
         break;
       case MESSAGE_SENT:
         std::cout << "\n============MESSAGE_SENT RESPONSE============\n" << std::endl;
+        printEndResponse();
         break;
       default:
         std::cout << "DEFAULT\n";
@@ -218,7 +224,7 @@ class Client {
   }
 
   void print() {
-    std::cout << "==================CLIENT DETAILS==========" << std::endl;
+    std::cout << "\n==================CLIENT DETAILS==========\n" << std::endl;
     std::cout << "Username : " << this->username << std::endl;
     std::cout << "Password : " << this->password << std::endl;
     std::cout << "Online : " << this->online << std::endl;
