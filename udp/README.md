@@ -26,3 +26,12 @@
 ![alt text][logo]
 
 [logo]: https://github.com/GitRafaelZamora/SocketChat/blob/master/udp/ScreenShot.png "Console App Screen Shot"
+
+## Demo Video :
+<a href="https://youtu.be/mFVosfK46Yo" target="_blank">
+   <img src="http://img.youtube.com/vi/mFVosfK46Yo/0.jpg" 
+        alt="Chat App Demo Video" 
+        width="240" 
+        height="180" 
+        border="10" />
+</a>
